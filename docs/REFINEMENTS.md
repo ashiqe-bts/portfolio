@@ -9,7 +9,7 @@ Implemented locally on 2026-10-09. No deployment or live EmailJS messages.
 - The contact panel has persistent labels, bounded fields, a prominent submit control, distinct status treatments and a synchronous duplicate-submission guard. All EmailJS configuration and field names remain unchanged.
 - The stack uses an interactive SVG membership map on wide screens and expandable technology groups on narrow screens/tablets. Hover/focus previews; click pins. Search and selection live in `q`, `category`, and `technology` URL parameters. Reset preserves unrelated URL state.
 - `associations.js` derives verified links from original tool lists and experience technology arrays. Explicit aliases handle Express.js/Express, Nest.js/NestJS, Tailwind/Tailwind CSS and case differences. MERN expands only to MongoDB, Express, React and Node.js. Source labels and displayed experience excerpts remain verbatim.
-- Terminal appearance is independent of visual light/dark. A single registry supplies Orange, Green, Amber and Bone to selector, commands, help and completion. `forged-terminal-theme-v2` intentionally ignores the legacy automatically saved green value. Explicit choices are validated and safely persisted.
+- Terminal appearance is independent of visual light/dark. A single registry supplies Orange, Green, Amber and Bone to commands, help and completion; the macOS-style UI keeps profile selection command-only. `forged-terminal-theme-v2` intentionally ignores the legacy automatically saved green value. Bone is the fallback, and explicit choices are validated and safely persisted.
 
 ## Generated artwork
 

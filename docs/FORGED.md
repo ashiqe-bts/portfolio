@@ -24,16 +24,19 @@ The build prerenders 12 public routes from the same actual page components and d
 
 ## Terminal and navigation
 
-`?mode=terminal` and `?mode=visual` override stored preferences. Entry canonicalizes the URL so browser history restores an explicit mode. Visual route, project filters and scroll position survive mode changes. Command output and history survive switching within the current page session; reload resets transcript and history, while preserving mode and terminal palette. Preference reads/writes tolerate blocked storage.
+`?mode=terminal` and `?mode=visual` override stored preferences. Entry canonicalizes the URL so browser history restores an explicit mode. Visual route, project filters and scroll position survive mode changes. Command output and history survive switching within the current page session; reload resets transcript and history, while preserving mode and a validated terminal palette. History and transcript each retain at most 100 entries. Preference reads/writes tolerate blocked storage.
 
-- `terminal/parser.js`: bounded input tokenizer with quoted arguments.
+- `terminal/parser.js`: 512-character tokenizer with quoted arguments and explicit rejection of control characters, pipes, redirects, chaining, command substitution and background execution.
 - `terminal/commands.js`: allowlisted command metadata and pure execution results.
-- `terminal/filesystem.js`: virtual paths backed exclusively by existing records.
-- `terminal/Terminal.jsx`: selectable semantic output, concise status announcements, keyboard history, completion, mobile chips and explicit GUI return.
+- `terminal/filesystem.js`: read-only virtual paths backed exclusively by existing records; `~`, absolute paths and parent traversal are clamped to `/home/ashiqe`.
+- `terminal/Terminal.jsx`: bounded transcript, concise status announcements, keyboard history, completion and window state.
+- `terminal/TerminalChrome.jsx`: semantic command output and the accessible macOS-style title bar.
 
-Run `help` to discover every command. `resume` returns an accessible link, avoiding popup blocking. No user input becomes executable code, HTML, a shell command, or an arbitrary URL. External destinations come only from existing portfolio data; browser navigation actions are fixed internal paths.
+The shell supports read-only navigation and search (`pwd`, `ls`, `cd`, `cat`, `tree`, `find`, `grep`), familiar utilities (`whoami`, `hostname`, `uname`, `echo`, `date`, `history`, `clear`, `help`, `man`) and the existing portfolio commands. Run `help` to discover the complete contract. `resume` returns an accessible link, avoiding popup blocking. No user input becomes executable code, HTML, an operating-system command, a network request or an arbitrary URL. External destinations come only from existing portfolio data; browser navigation actions are fixed internal paths.
 
-The command palette supports Cmd/Ctrl+K, arrows, Enter, Escape, native dialog focus containment and restoration. Terminal Tab completion does not trap focus once a completion has been accepted.
+Terminal mode renders a centered macOS-style window on desktop and a full-height window on mobile. Red returns to the visual site, yellow minimizes, and green toggles the expanded state. Bone is the default foreground; Orange, Green, Amber and Bone remain available through the validated `theme` command rather than visible controls. Ctrl+C cancels the current line, Ctrl+L clears output, arrows recall history, and Tab completes unique matches or prints bounded candidates. Accepted completions wrap focus to the window controls instead of trapping keyboard users.
+
+The command palette supports Cmd/Ctrl+K, arrows, Enter, Escape, native dialog focus containment and restoration. The highlighted home-page Quick overview link remains; its duplicate footer link is omitted only on the home route.
 
 ## Contact configuration
 

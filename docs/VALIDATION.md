@@ -46,3 +46,11 @@ The latest pass has 24 passing unit tests and 33 passing browser tests across al
 ## Hero, skills and identity follow-up
 
 Latest checks cover 24 unit tests and 39 browser scenarios, including stable hover layout and scroll, click-only details, exact silhouette compositing, hidden mobile sculpture, visible branding removal, gallery removal and the new favicon. See the follow-up section in [REFINEMENTS.md](REFINEMENTS.md). The initial failed hover test was corrected to keep all tested buttons onscreen; the affected scenarios passed in all three engines on rerun.
+
+## Mac-style sandboxed terminal — 15 October 2026
+
+- Vitest: 29 tests pass, including virtual-root clamping, shell-syntax rejection, 512-character input limits, 100-entry history/transcript bounds, read-only Unix-style commands, command-only palettes, Ctrl+C and ambiguous completion.
+- Playwright: 48 scenarios pass across Chromium, Firefox and WebKit. Coverage includes functional macOS window controls, command execution/search, mode and scroll restoration, cross-browser Tab focus, the single home-page Quick overview link, responsive overflow and axe scans.
+- Production client and SSR builds pass and continue prerendering 12 public routes. Lint and content-preservation checks pass.
+- The production dependency audit reports zero vulnerabilities. No dependency, server endpoint, real shell, host-filesystem access or user-derived network destination was added.
+- Desktop and 390px mobile screenshots were manually reviewed. Desktop uses a centered window; mobile preserves the title bar and fills the available viewport without horizontal overflow.
