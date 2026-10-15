@@ -38,6 +38,18 @@ test("visual routes, exact descriptions and project filters", async ({
   }
   expect(errors).toEqual([]);
 });
+test("home shows one quick overview link while inner pages keep the footer link", async ({
+  page,
+}) => {
+  await page.goto("/?mode=visual");
+  await expect(
+    page.getByRole("link", { name: "Quick overview" }),
+  ).toHaveCount(1);
+  await page.goto("/projects?mode=visual");
+  await expect(
+    page.getByRole("link", { name: "Quick overview" }),
+  ).toHaveCount(1);
+});
 test("terminal executes, completes, preserves session, exits and supports browser history", async ({
   page,
 }) => {

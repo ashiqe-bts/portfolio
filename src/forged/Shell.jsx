@@ -86,14 +86,17 @@ export function Navigation() {
   );
 }
 export function Footer() {
+  const location = useLocation();
   return (
     <footer className="site-footer">
       <p>
         © {new Date().getFullYear()} {profile.name}. ALL RIGHTS RESERVED.
       </p>
-      <Link to="/overview">
-        Quick overview <ArrowUpRight size={14} />
-      </Link>
+      {location.pathname !== "/" && (
+        <Link to="/overview">
+          Quick overview <ArrowUpRight size={14} />
+        </Link>
+      )}
     </footer>
   );
 }
