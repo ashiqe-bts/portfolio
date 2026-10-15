@@ -16,19 +16,11 @@ The original six published projects remain published. Commented-out project entr
 
 React 18, Vite, React Router, Tailwind, Framer Motion, React Three Fiber and Drei remain. FORGED adds a charcoal/bone/orange design system, locally served Syne/Instrument Sans/IBM Plex Mono, a focused hero, two editorial featured layouts followed by the archive, complete descriptions, project detail URLs, a selectable stack explorer, experience timeline, contact form, command palette and recruiter overview.
 
-The new UI is under `src/forged/`. Original components remain in place, outside the active application import graph, to preserve source content. Their changes are lint corrections and the shared experience extraction. The original splash remains preserved and unmounted; the active introduction is the independently implemented `SystemBoot`. The original stars/sphere/cursor implementations are not imported by the new application.
+The new UI is under `src/forged/`. Original components remain in place, outside the active application import graph, to preserve source content. Their changes are lint corrections and the shared experience extraction. The old blocking splash remains preserved in source but is no longer mounted. The original stars/sphere/cursor implementations are not imported by the new application.
 
 The Engineering Core uses demand rendering, damped inspection and scroll response. Keyboard rotation/reset controls complement dragging. It loads only on sufficiently wide fine-pointer devices; mobile, reduced-motion, save-data, initialization errors and context loss use an SVG diagram. Offscreen/hidden-tab scenes unmount. Terminal mode never mounts a canvas.
 
 The build prerenders 12 public routes from the same actual page components and data. Generated HTML is replaced by the client application at startup rather than hydrated, avoiding mismatches from per-visitor theme/mode preferences. Vite's normal SSR build produces the temporary render module. `dist/` is the deployable output; `dist-ssr/` is ignored build output. Canonical URLs, descriptions, Open Graph data, sitemap and robots are generated. Existing Vercel rewrites are retained; filesystem assets take precedence over rewrites.
-
-## System boot introduction
-
-Every full client application load mounts a deterministic 2.5-second System Forge introduction. Client-side route and visual/terminal mode changes do not replay it. The sequence assembles a local SVG signal core, advances through fixed portfolio diagnostics, and opens through a split-panel reveal. It represents a designed introduction rather than actual network, build or system progress.
-
-Visual entry inherits the active light/dark tokens. Direct terminal entry uses the terminal surface and the validated saved Bone, Orange, Green or Amber foreground. The sequence uses only React, local SVG and CSS; it performs no fetch, canvas/WebGL work, storage write or external asset load.
-
-While active, the application frame is inert and hidden from the accessibility tree, document scrolling is locked, and the current step is announced politely. Skip becomes visible after 500ms and Escape dismisses immediately. Completion restores focus to visual main content or the terminal command line. Reduced-motion visitors receive a static final-status handoff lasting 320ms. The layout removes secondary telemetry on small or short screens while retaining the identity, status, progress and a minimum 44px Skip target.
 
 ## Terminal and navigation
 
