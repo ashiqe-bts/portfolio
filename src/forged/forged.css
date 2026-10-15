@@ -1041,6 +1041,490 @@ select {
   font-family: "IBM Plex Mono", monospace;
   font-size: 12px;
 }
+
+body.boot-active {
+  overflow: hidden;
+}
+.application-frame[aria-hidden="true"] {
+  pointer-events: none;
+  user-select: none;
+}
+.system-boot {
+  --boot-bg: var(--bg);
+  --boot-ink: var(--ink);
+  --boot-muted: var(--muted);
+  --boot-line: var(--border);
+  --boot-signal: var(--accent);
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  min-width: 320px;
+  overflow: hidden;
+  color: var(--boot-ink);
+  background: transparent;
+  isolation: isolate;
+  font:
+    10px/1.5 "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.system-boot[data-mode="terminal"] {
+  --boot-bg: #0d0e0e;
+  --boot-ink: #eee8dd;
+  --boot-muted: #aeb0b2;
+  --boot-line: #3e4144;
+  color-scheme: dark;
+}
+.system-boot-panel {
+  position: absolute;
+  z-index: -2;
+  top: 0;
+  bottom: 0;
+  width: 50.5%;
+  background: var(--boot-bg);
+  transition: transform 0.38s cubic-bezier(0.76, 0, 0.24, 1);
+}
+.system-boot-panel-left {
+  left: 0;
+}
+.system-boot-panel-right {
+  right: 0;
+}
+.system-boot-grid {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  opacity: 0.5;
+  background-image:
+    linear-gradient(var(--boot-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--boot-line) 1px, transparent 1px);
+  background-position: center;
+  background-size: clamp(56px, 6.5vw, 104px) clamp(56px, 6.5vw, 104px);
+  mask-image: radial-gradient(circle at center, #000 0 34%, transparent 76%);
+  transition: opacity 0.18s ease;
+}
+.system-boot-grid::before,
+.system-boot-grid::after {
+  position: absolute;
+  content: "";
+}
+.system-boot-grid::before {
+  inset: 50% 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--boot-signal), transparent);
+  animation: boot-scan 1.4s ease-in-out both;
+}
+.system-boot-grid::after {
+  inset: 0;
+  opacity: 0.22;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0 3px,
+    color-mix(in srgb, var(--boot-ink) 12%, transparent) 4px
+  );
+}
+.system-boot-frame {
+  width: 100%;
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  padding: clamp(22px, 3.5vw, 56px);
+  transition:
+    opacity 0.22s ease,
+    transform 0.34s cubic-bezier(0.76, 0, 0.24, 1);
+}
+.boot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 16px;
+  color: var(--boot-muted);
+  border-bottom: 1px solid var(--boot-line);
+}
+.boot-header span:first-child::before {
+  width: 7px;
+  height: 7px;
+  display: inline-block;
+  margin-right: 12px;
+  content: "";
+  background: var(--boot-signal);
+  border-radius: 50%;
+  box-shadow: 0 0 18px var(--boot-signal);
+}
+.boot-stage {
+  position: relative;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+}
+.boot-coordinate {
+  position: absolute;
+  top: 50%;
+  color: var(--boot-muted);
+  font-size: 9px;
+  line-height: 1.9;
+}
+.boot-coordinate-left {
+  left: 0;
+  transform: translateY(-50%);
+}
+.boot-coordinate-right {
+  right: 0;
+  text-align: right;
+  transform: translateY(-50%);
+}
+.system-boot-core {
+  width: min(56vmin, 540px);
+  max-height: 62vh;
+  overflow: visible;
+  fill: none;
+  stroke: var(--boot-line);
+  stroke-width: 1;
+}
+.boot-orbits circle {
+  stroke-dasharray: 0.018 0.028;
+  opacity: 0;
+  transform-origin: center;
+  animation: boot-orbit 1.8s 0.12s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.boot-orbits circle:nth-child(2) {
+  animation-delay: 0.24s;
+  animation-direction: reverse;
+}
+.boot-core-frames rect {
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  vector-effect: non-scaling-stroke;
+}
+.boot-core-frames rect:nth-child(1) {
+  stroke: var(--boot-muted);
+  animation: boot-frame-one 1s 0.12s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.boot-core-frames rect:nth-child(2) {
+  stroke: var(--boot-signal);
+  animation: boot-frame-two 1s 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.boot-core-frames rect:nth-child(3) {
+  stroke: var(--boot-ink);
+  animation: boot-frame-three 1s 0.44s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.boot-crosshair {
+  opacity: 0;
+  animation: boot-fade-in 0.35s 0.85s ease-out forwards;
+}
+.boot-crosshair circle {
+  fill: var(--boot-signal);
+  stroke: none;
+}
+.boot-signal-mark {
+  stroke: var(--boot-signal);
+  stroke-width: 4;
+  stroke-linecap: square;
+  stroke-linejoin: bevel;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  vector-effect: non-scaling-stroke;
+  animation: boot-draw 0.7s 1.05s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.boot-identity {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: min(78vw, 820px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+.boot-kicker {
+  margin-bottom: 9px;
+  color: var(--boot-muted);
+  font-size: 9px;
+  opacity: 0;
+  animation: boot-rise 0.4s 1.1s ease-out forwards;
+}
+.boot-wordmark {
+  color: var(--boot-ink);
+  font:
+    800 clamp(52px, 8.5vw, 132px) / 0.82 "Syne Variable",
+    sans-serif;
+  letter-spacing: -0.08em;
+  opacity: 0;
+  transform: scaleX(0.82);
+  animation: boot-wordmark 0.5s 1.34s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.boot-wordmark > span {
+  color: var(--boot-signal);
+}
+.boot-online {
+  margin-top: 17px;
+  padding: 7px 10px;
+  color: var(--boot-signal);
+  border: 1px solid color-mix(in srgb, var(--boot-signal) 55%, transparent);
+  opacity: 0;
+  transform: translateY(6px);
+  animation: boot-rise 0.24s 2.02s ease-out forwards;
+}
+.boot-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 24vw);
+  align-items: end;
+  gap: clamp(24px, 6vw, 96px);
+  padding-top: 18px;
+  border-top: 1px solid var(--boot-line);
+}
+.boot-diagnostics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  color: color-mix(in srgb, var(--boot-muted) 58%, transparent);
+  font-size: 8px;
+}
+.boot-diagnostics span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.3s ease;
+}
+.boot-diagnostics i {
+  margin-right: 4px;
+  color: inherit;
+  font-style: normal;
+}
+.boot-diagnostics .complete {
+  color: var(--boot-muted);
+}
+.boot-diagnostics .active {
+  color: var(--boot-signal);
+}
+.boot-readout {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 14px;
+  color: var(--boot-signal);
+}
+.boot-progress {
+  height: 2px;
+  overflow: hidden;
+  background: var(--boot-line);
+}
+.boot-progress > span {
+  width: var(--boot-progress);
+  height: 100%;
+  display: block;
+  background: var(--boot-signal);
+  box-shadow: 0 0 12px var(--boot-signal);
+  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.boot-skip {
+  position: absolute;
+  z-index: 3;
+  top: clamp(66px, 8vw, 112px);
+  right: clamp(22px, 3.5vw, 56px);
+  min-width: 118px;
+  min-height: 44px;
+  padding: 10px 14px;
+  color: var(--boot-ink);
+  opacity: 0;
+  background: color-mix(in srgb, var(--boot-bg) 88%, transparent);
+  border: 1px solid var(--boot-line);
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: uppercase;
+  animation: boot-fade-in 0.22s ease-out both;
+}
+.boot-skip span {
+  margin-left: 7px;
+  color: var(--boot-signal);
+}
+.boot-skip:hover {
+  color: var(--boot-bg);
+  background: var(--boot-ink);
+  border-color: var(--boot-ink);
+}
+.system-boot.is-exiting .system-boot-frame,
+.system-boot.is-exiting .system-boot-grid,
+.system-boot.is-exiting .boot-skip {
+  opacity: 0;
+}
+.system-boot.is-exiting .system-boot-frame {
+  transform: scale(1.025);
+}
+.system-boot.is-exiting .system-boot-panel-left {
+  transform: translateX(-100%);
+}
+.system-boot.is-exiting .system-boot-panel-right {
+  transform: translateX(100%);
+}
+.system-boot.reduced-motion .boot-orbits circle,
+.system-boot.reduced-motion .boot-crosshair,
+.system-boot.reduced-motion .boot-kicker,
+.system-boot.reduced-motion .boot-wordmark,
+.system-boot.reduced-motion .boot-online {
+  opacity: 1;
+}
+.system-boot.reduced-motion .boot-wordmark {
+  transform: scaleX(1);
+}
+.system-boot.reduced-motion .boot-online,
+.system-boot.reduced-motion .boot-kicker {
+  transform: none;
+}
+.system-boot.reduced-motion .boot-signal-mark {
+  stroke-dashoffset: 0;
+}
+
+@keyframes boot-scan {
+  0% {
+    opacity: 0;
+    transform: translateY(-32vh);
+  }
+  30%,
+  70% {
+    opacity: 0.65;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(32vh);
+  }
+}
+@keyframes boot-orbit {
+  from {
+    opacity: 0;
+    transform: rotate(-28deg) scale(0.82);
+  }
+  to {
+    opacity: 0.72;
+    transform: rotate(22deg) scale(1);
+  }
+}
+@keyframes boot-frame-one {
+  from {
+    opacity: 0;
+    transform: rotate(84deg) scale(0.36);
+  }
+  to {
+    opacity: 0.72;
+    transform: rotate(45deg) scale(0.9);
+  }
+}
+@keyframes boot-frame-two {
+  from {
+    opacity: 0;
+    transform: rotate(-54deg) scale(0.38);
+  }
+  to {
+    opacity: 0.94;
+    transform: rotate(14deg) scale(0.82);
+  }
+}
+@keyframes boot-frame-three {
+  from {
+    opacity: 0;
+    transform: rotate(76deg) scale(0.4);
+  }
+  to {
+    opacity: 0.82;
+    transform: rotate(-18deg) scale(0.74);
+  }
+}
+@keyframes boot-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes boot-rise {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes boot-wordmark {
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+@keyframes boot-fade-in {
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 760px) {
+  .system-boot-frame {
+    padding: 20px;
+  }
+  .boot-header {
+    font-size: 8px;
+  }
+  .boot-coordinate {
+    display: none;
+  }
+  .system-boot-core {
+    width: min(92vw, 430px);
+    max-height: 58vh;
+  }
+  .boot-identity {
+    width: calc(100vw - 40px);
+  }
+  .boot-kicker {
+    font-size: 8px;
+  }
+  .boot-wordmark {
+    font-size: clamp(46px, 16vw, 82px);
+  }
+  .boot-footer {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .boot-diagnostics {
+    display: block;
+    min-height: 15px;
+    font-size: 8px;
+  }
+  .boot-diagnostics span {
+    display: none;
+  }
+  .boot-diagnostics .active {
+    display: block;
+  }
+  .boot-readout {
+    grid-template-columns: 1fr 42px;
+  }
+  .boot-skip {
+    top: 58px;
+    right: 20px;
+  }
+}
+@media (max-height: 620px) {
+  .system-boot-frame {
+    padding-block: 16px;
+  }
+  .system-boot-core {
+    width: min(56vh, 390px);
+  }
+  .boot-coordinate,
+  .boot-kicker,
+  .boot-diagnostics {
+    display: none;
+  }
+  .boot-footer {
+    grid-template-columns: 1fr;
+  }
+  .boot-skip {
+    top: 54px;
+  }
+}
+.system-boot :focus-visible {
+  outline: 2px solid var(--boot-signal);
+  outline-offset: 4px;
+}
 .command-dialog {
   padding: 0;
   border: 1px solid var(--border);

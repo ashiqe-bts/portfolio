@@ -17,6 +17,7 @@ import { initialSession } from "./forged/terminal/commands";
 import { Navigation, Footer } from "./forged/Shell";
 import Hero from "./forged/Hero";
 import CommandPalette from "./forged/CommandPalette";
+import SystemBoot from "./forged/SystemBoot";
 import { profile } from "./forged/content";
 import { projects, projectMeta } from "./forged/catalog";
 const Projects = lazy(() => import("./forged/Projects"));
@@ -43,6 +44,7 @@ export default function App() {
   );
   const mode = resolveMode(location.search, savedMode);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [booting, setBooting] = useState(true);
   const [terminal, setTerminal] = useState(() => ({
     session: {
       ...initialSession,
@@ -153,44 +155,71 @@ export default function App() {
     }),
     [mode, switchMode, paletteOpen, terminal],
   );
+  const finishBoot = useCallback(() => {
+    setBooting(false);
+    requestAnimationFrame(() => {
+      const target =
+        mode === "terminal"
+          ? document.getElementById("command-input") ||
+            document.getElementById("main-content")
+          : document.getElementById("main-content");
+      target?.focus({ preventScroll: true });
+    });
+  }, [mode]);
   return (
     <PortfolioContext.Provider value={value}>
       <MotionConfig reducedMotion="user">
-        <a className="skip-link" href="#main-content">
-          Skip to content
-        </a>
-        {mode === "terminal" ? (
-          <main id="main-content">
-            <Suspense
-              fallback={<p className="loading-state">Opening terminal…</p>}
-            >
-              <Terminal />
-            </Suspense>
-          </main>
-        ) : (
-          <>
-            <ScrollProgress />
-            <Navigation />
-            <main id="main-content" className="visual-main">
-              <Suspense fallback={<p className="loading-state">Loading…</p>}>
-                <div className="route-frame" key={location.pathname}>
-                  <Routes>
-                    <Route path="/" element={<Hero />} />
-                    <Route path="/projects" element={<Projects />} />
-                    <Route path="/projects/:slug" element={<ProjectDetail />} />
-                    <Route path="/experience" element={<Experience />} />
-                    <Route path="/skills" element={<Skills />} />
-                    <Route path="/contact" element={<Contact />} />
-                    <Route path="/overview" element={<Overview />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </div>
+        <div
+          className="application-frame"
+          aria-hidden={booting ? "true" : undefined}
+          inert={booting ? "" : undefined}
+        >
+          <a className="skip-link" href="#main-content">
+            Skip to content
+          </a>
+          {mode === "terminal" ? (
+            <main id="main-content" tabIndex={-1}>
+              <Suspense
+                fallback={<p className="loading-state">Opening terminal…</p>}
+              >
+                <Terminal />
               </Suspense>
             </main>
-            <Footer />
-          </>
+          ) : (
+            <>
+              <ScrollProgress />
+              <Navigation />
+              <main id="main-content" className="visual-main" tabIndex={-1}>
+                <Suspense fallback={<p className="loading-state">Loading…</p>}>
+                  <div className="route-frame" key={location.pathname}>
+                    <Routes>
+                      <Route path="/" element={<Hero />} />
+                      <Route path="/projects" element={<Projects />} />
+                      <Route
+                        path="/projects/:slug"
+                        element={<ProjectDetail />}
+                      />
+                      <Route path="/experience" element={<Experience />} />
+                      <Route path="/skills" element={<Skills />} />
+                      <Route path="/contact" element={<Contact />} />
+                      <Route path="/overview" element={<Overview />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </div>
+                </Suspense>
+              </main>
+              <Footer />
+            </>
+          )}
+          <CommandPalette />
+        </div>
+        {booting && (
+          <SystemBoot
+            mode={mode}
+            palette={terminal.session.palette}
+            onComplete={finishBoot}
+          />
         )}
-        <CommandPalette />
       </MotionConfig>
     </PortfolioContext.Provider>
   );
