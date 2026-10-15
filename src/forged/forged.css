@@ -1172,30 +1172,42 @@ select {
 .terminal-window-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0;
   justify-self: start;
 }
 .terminal-window-controls button {
-  width: 13px;
-  height: 13px;
-  min-width: 13px;
-  min-height: 13px;
+  position: relative;
+  width: 28px;
+  height: 42px;
+  min-width: 28px;
+  min-height: 42px;
   padding: 0;
   border: 0;
+  background: transparent;
+}
+.terminal-window-controls button::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 13px;
+  height: 13px;
+  content: "";
+  background: var(--window-control);
   border-radius: 50%;
   box-shadow: inset 0 0 0 0.5px #0005;
+  transform: translate(-50%, -50%);
 }
 .terminal-window-controls button:hover {
   filter: brightness(1.08);
 }
 .terminal-close {
-  background: #ff5f57;
+  --window-control: #ff5f57;
 }
 .terminal-minimize {
-  background: #febc2e;
+  --window-control: #febc2e;
 }
 .terminal-maximize {
-  background: #28c840;
+  --window-control: #28c840;
 }
 .terminal-titlebar-spacer {
   width: 55px;
@@ -1714,18 +1726,28 @@ select {
   }
   .terminal-window.minimized {
     width: calc(100% - 24px);
-    height: 42px;
-    min-height: 42px;
+    height: 48px;
+    min-height: 48px;
     border: 1px solid #4b4d51;
     border-radius: 10px;
   }
   .terminal-titlebar {
+    min-height: 48px;
     padding: 0 12px;
   }
+  .terminal-window-controls button {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
   .terminal-titlebar h1 {
-    max-width: 180px;
+    max-width: 96px;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  .terminal-titlebar-spacer {
+    width: 132px;
   }
   .terminal-screen {
     padding: 18px 14px 28px;
@@ -1745,6 +1767,12 @@ select {
   }
   .command-search input {
     font-size: 13px;
+  }
+}
+@media (max-width: 360px) {
+  .terminal-titlebar h1 {
+    width: 32px;
+    max-width: 32px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
