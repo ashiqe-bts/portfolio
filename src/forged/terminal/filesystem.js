@@ -50,19 +50,24 @@ export const directories = [
   HOME + "/skills",
 ];
 export function resolvePath(path = "~", cwd = HOME) {
-  if (path === "~") return HOME;
-  const expanded = path.startsWith("~/") ? HOME + path.slice(1) : path;
-  const parts = (
-    expanded.startsWith("/") ? expanded : cwd + "/" + expanded
-  ).split("/");
-  const result = [];
-  for (const part of parts) {
-    if (part === "..") result.pop();
+  if (!path || path === "~" || path === "/") return HOME;
+  let expanded;
+  if (path.startsWith("~/")) expanded = HOME + path.slice(1);
+  else if (path === HOME || path.startsWith(HOME + "/")) expanded = path;
+  else if (path.startsWith("/")) expanded = HOME + path;
+  else expanded = cwd + "/" + path;
+  const root = HOME.split("/").filter(Boolean);
+  const result = [...root];
+  const relative = expanded.startsWith(HOME)
+    ? expanded.slice(HOME.length)
+    : expanded;
+  for (const part of relative.split("/")) {
+    if (part === "..") {
+      if (result.length > root.length) result.pop();
+    }
     else if (part && part !== ".") result.push(part);
   }
-  const resolved = "/" + result.join("/");
-  if (resolved === "/" || resolved === "/home") return HOME;
-  return resolved;
+  return "/" + result.join("/");
 }
 export function entries(cwd) {
   return [
@@ -78,4 +83,29 @@ export function entries(cwd) {
           .includes("/"),
     )
     .map((x) => x.slice(cwd.length + 1));
+}
+
+export function descendants(path) {
+  const prefix = path === HOME ? HOME + "/" : path + "/";
+  return [...directories, ...Object.keys(files)]
+    .filter((candidate) => candidate !== path && candidate.startsWith(prefix))
+    .sort((a, b) => a.localeCompare(b));
+}
+
+export function searchableLines(path) {
+  const read = files[path];
+  if (!read) return [];
+  return read().flatMap((item) => {
+    if (item.kind === "text") return String(item.text).split("\n");
+    if (item.kind === "link") return [item.text, item.href];
+    if (item.kind === "project")
+      return [
+        item.project.title,
+        item.project.description,
+        item.project.tools.join(" · "),
+        item.project.github,
+        item.project.demo,
+      ].filter(Boolean);
+    return [];
+  });
 }

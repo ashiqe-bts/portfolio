@@ -1,5 +1,17 @@
 export function tokenize(input) {
-  if (input.length > 2000) throw new Error("Command is too long.");
+  if (input.length > 512)
+    throw new Error("Command is too long (maximum 512 characters).");
+  if (
+    Array.from(input).some((character) => {
+      const code = character.charCodeAt(0);
+      return code < 32 || code === 127;
+    })
+  )
+    throw new Error("Control characters are not supported in this sandbox.");
+  if (/(?:&&|\|\||[;|&<>`]|\$\()/.test(input))
+    throw new Error(
+      "Unsupported shell syntax. Pipes, redirects, chaining and command substitution are disabled.",
+    );
   const tokens = [];
   let word = "";
   let quote = null;
