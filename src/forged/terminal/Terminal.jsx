@@ -125,9 +125,17 @@ export default function Terminal() {
     if (
       event.key === "Tab" &&
       !event.shiftKey &&
-      suggestions.length &&
-      (suggestions.length > 1 || suggestions[0] !== input)
+      suggestions.length === 1 &&
+      suggestions[0] === input
     ) {
+      event.preventDefault();
+      inputRef.current
+        ?.closest(".terminal-window")
+        ?.querySelector(".terminal-close")
+        ?.focus();
+      return;
+    }
+    if (event.key === "Tab" && !event.shiftKey && suggestions.length) {
       event.preventDefault();
       if (suggestions.length === 1) updateInput(suggestions[0]);
       else showCompletions();
