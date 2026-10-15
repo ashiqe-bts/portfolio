@@ -8,7 +8,7 @@ export const palettes = [
 export const paletteIds = palettes.map(({ id }) => id);
 export const appearanceKey = "forged-terminal-theme-v2";
 export const readAppearance = () =>
-  readPreference(appearanceKey, paletteIds, "orange");
+  readPreference(appearanceKey, paletteIds, "bone");
 export const saveAppearance = (id) => {
   if (paletteIds.includes(id)) savePreference(appearanceKey, id);
 };

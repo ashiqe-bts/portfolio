@@ -28,7 +28,7 @@ afterEach(() => {
 describe("terminal appearance", () => {
   it("ignores the legacy default, validates and persists every explicit palette", () => {
     localStorage.setItem("forged-terminal-theme", "green");
-    expect(readAppearance()).toBe("orange");
+    expect(readAppearance()).toBe("bone");
     for (const { id } of palettes) {
       expect(execute(`theme ${id}`).state.palette).toBe(id);
       expect(complete("theme ", initialSession)).toContain(`theme ${id}`);
@@ -36,7 +36,7 @@ describe("terminal appearance", () => {
       expect(readAppearance()).toBe(id);
     }
     localStorage.setItem(appearanceKey, "unknown");
-    expect(readAppearance()).toBe("orange");
+    expect(readAppearance()).toBe("bone");
     expect(execute("theme unknown").error).toBe(true);
   });
   it("survives blocked storage", () => {
@@ -46,10 +46,10 @@ describe("terminal appearance", () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
       throw Error("blocked");
     });
-    expect(readAppearance()).toBe("orange");
+    expect(readAppearance()).toBe("bone");
     expect(() => saveAppearance("amber")).not.toThrow();
   });
-  it("keeps the selector and command session synchronized", () => {
+  function renderTerminal(switchMode = vi.fn()) {
     window.matchMedia = vi.fn(() => ({ matches: false }));
     Element.prototype.scrollIntoView = vi.fn();
     function Harness() {
@@ -63,7 +63,7 @@ describe("terminal appearance", () => {
           value={{
             terminal,
             setTerminal,
-            switchMode: vi.fn(),
+            switchMode,
             setPaletteOpen: vi.fn(),
           }}
         >
@@ -72,17 +72,62 @@ describe("terminal appearance", () => {
       );
     }
     render(<Harness />);
-    fireEvent.click(screen.getByRole("button", { name: "Bone", exact: true }));
-    expect(readAppearance()).toBe("bone");
+    return switchMode;
+  }
+  it("uses command-only themes with a Bone default", () => {
+    renderTerminal();
+    expect(screen.queryByRole("group", { name: "Terminal appearance" })).toBe(
+      null,
+    );
+    expect(document.querySelector(".terminal-page").className).toContain(
+      "palette-bone",
+    );
     const input = screen.getByRole("textbox", { name: "Terminal command" });
     fireEvent.change(input, { target: { value: "theme amber" } });
     fireEvent.submit(input.closest("form"));
-    expect(
-      screen
-        .getByRole("button", { name: "Amber", exact: true })
-        .getAttribute("aria-pressed"),
-    ).toBe("true");
+    expect(document.querySelector(".terminal-page").className).toContain(
+      "palette-amber",
+    );
     expect(readAppearance()).toBe("amber");
+  });
+  it("provides functional macOS window controls", () => {
+    const switchMode = renderTerminal();
+    expect(screen.getByText("ashiqe — zsh — portfolio")).toBeTruthy();
+    const screenElement = document.querySelector(".terminal-screen");
+    fireEvent.click(screen.getByRole("button", { name: "Minimize terminal" }));
+    expect(screenElement.hidden).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Maximize terminal" }));
+    expect(screenElement.hidden).toBe(false);
+    expect(document.querySelector(".terminal-window").className).toContain(
+      "maximized",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Close terminal" }));
+    expect(switchMode).toHaveBeenCalledWith("visual");
+  });
+  it("cancels input with Ctrl+C and bounds the transcript", () => {
+    renderTerminal();
+    const input = screen.getByRole("textbox", { name: "Terminal command" });
+    fireEvent.change(input, { target: { value: "echo pending" } });
+    fireEvent.keyDown(input, { key: "c", ctrlKey: true });
+    expect(input.value).toBe("");
+    expect(document.querySelector(".terminal-command").textContent).toContain(
+      "echo pending^C",
+    );
+    for (let index = 0; index < 101; index += 1) {
+      fireEvent.change(input, { target: { value: `echo ${index}` } });
+      fireEvent.submit(input.closest("form"));
+    }
+    expect(document.querySelectorAll(".terminal-entry")).toHaveLength(100);
+  });
+  it("prints safe candidates when Tab completion is ambiguous", () => {
+    renderTerminal();
+    const input = screen.getByRole("textbox", { name: "Terminal command" });
+    fireEvent.change(input, { target: { value: "p" } });
+    fireEvent.keyDown(input, { key: "Tab" });
+    expect(document.querySelector(".terminal-completions").textContent).toContain(
+      "projects",
+    );
+    expect(input.value).toBe("p");
   });
 });
 describe("verified stack references", () => {

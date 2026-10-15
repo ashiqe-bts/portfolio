@@ -46,6 +46,24 @@ test("terminal executes, completes, preserves session, exits and supports browse
   const input = page.getByRole("textbox", { name: "Terminal command" });
   await expect(input).toBeVisible();
   await expect(page.locator("canvas")).toHaveCount(0);
+  await expect(
+    page.getByRole("region", { name: "Portfolio terminal window" }),
+  ).toBeVisible();
+  await expect(page.getByText("ashiqe — zsh — portfolio")).toBeVisible();
+  await page.getByRole("button", { name: "Minimize terminal" }).click();
+  await expect(input).toBeHidden();
+  await page.getByRole("button", { name: "Restore terminal" }).click();
+  await page.getByRole("button", { name: "Maximize terminal" }).click();
+  await expect(page.locator(".terminal-window")).toHaveClass(/maximized/);
+  await page.getByRole("button", { name: "Exit full-screen terminal" }).click();
+  await input.fill("tree projects");
+  await input.press("Enter");
+  await expect(page.getByText("techtribe.txt", { exact: false })).toBeVisible();
+  await input.fill('grep -i "software engineer" about.txt');
+  await input.press("Enter");
+  await expect(
+    page.getByText(/Software Engineer building scalable mobile/),
+  ).toBeVisible();
   await input.fill("project tech");
   await input.press("Tab");
   await expect(input).toHaveValue("project techtribe");
@@ -164,7 +182,7 @@ test("mode switching restores scroll and terminal Tab does not trap focus", asyn
   await input.fill("help");
   await input.press("Tab");
   await expect(input).not.toBeFocused();
-  await page.getByRole("button", { name: "Return to visual" }).click();
+  await page.getByRole("button", { name: "Close terminal" }).click();
   await expect(page.locator(".projects-page")).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(800);
   await page.goBack();
@@ -216,16 +234,21 @@ test("technology search and mobile command palette open exact skill records", as
   await expect(page.locator(".technology-detail h3")).toHaveText("Nest.js");
 });
 
-test("palette migration, selector, commands and all palette contrast", async ({
+test("palette migration, commands and all palette contrast", async ({
   page,
 }) => {
   await page.addInitScript(() =>
     localStorage.setItem("forged-terminal-theme", "green"),
   );
   await page.goto("/?mode=terminal");
-  await expect(page.locator(".terminal-page")).toHaveClass(/palette-orange/);
+  await expect(page.locator(".terminal-page")).toHaveClass(/palette-bone/);
+  await expect(
+    page.getByRole("group", { name: "Terminal appearance" }),
+  ).toHaveCount(0);
+  const input = page.getByRole("textbox", { name: "Terminal command" });
   for (const label of ["Orange", "Green", "Amber", "Bone"]) {
-    await page.getByRole("button", { name: label, exact: true }).click();
+    await input.fill("theme " + label.toLowerCase());
+    await input.press("Enter");
     await expect(page.locator(".terminal-page")).toHaveClass(
       new RegExp("palette-" + label.toLowerCase()),
     );
@@ -236,14 +259,11 @@ test("palette migration, selector, commands and all palette contrast", async ({
       ),
     ).toEqual([]);
   }
-  const input = page.getByRole("textbox", { name: "Terminal command" });
   await input.fill("theme o");
   await input.press("Tab");
   await expect(input).toHaveValue("theme orange");
   await input.press("Enter");
-  await expect(
-    page.getByRole("button", { name: "Orange", exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".terminal-page")).toHaveClass(/palette-orange/);
   await page.reload();
   await expect(page.locator(".terminal-page")).toHaveClass(/palette-orange/);
 });

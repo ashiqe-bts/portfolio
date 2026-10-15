@@ -1,71 +1,51 @@
 import { useEffect, useRef, useState } from "react";
 import { usePortfolio } from "../context";
 import { execute, complete } from "./commands";
-import { ExternalLink } from "../ui";
-import { profile } from "../content";
 import { palettes, saveAppearance } from "./palettes";
-import PropTypes from "prop-types";
-function Output({ item }) {
-  if (item.kind === "project")
-    return (
-      <article className="terminal-project">
-        <h2>{item.project.title}</h2>
-        <p>{item.project.description}</p>
-        <p>{item.project.tools.join(" · ")}</p>
-        <ExternalLink href={item.project.github}>
-          {item.project.github}
-        </ExternalLink>
-        <ExternalLink href={item.project.demo}>
-          {item.project.demo}
-        </ExternalLink>
-      </article>
-    );
-  if (item.kind === "link")
-    return (
-      <p>
-        <ExternalLink href={item.href}>{item.text} ↗</ExternalLink>
-      </p>
-    );
-  return <p className="terminal-line">{item.text}</p>;
-}
-Output.propTypes = { item: PropTypes.object.isRequired };
+import { TerminalEntry, TerminalTitlebar } from "./TerminalChrome";
+
+const MAX_TRANSCRIPT = 100;
+
 export default function Terminal() {
-  const { switchMode, terminal, setTerminal, setPaletteOpen } = usePortfolio();
+  const { switchMode, terminal, setTerminal } = usePortfolio();
   const { session, entries, input } = terminal;
-  const inputRef = useRef();
-  const endRef = useRef();
-  const [historyIndex, setHistoryIndex] = useState(null);
+  const inputRef = useRef(null);
+  const screenRef = useRef(null);
   const draft = useRef("");
+  const follow = useRef(true);
+  const [historyIndex, setHistoryIndex] = useState(null);
   const [announcement, setAnnouncement] = useState("");
   const [newOutput, setNewOutput] = useState(false);
-  const follow = useRef(true);
+  const [minimized, setMinimized] = useState(false);
+  const [maximized, setMaximized] = useState(false);
   const suggestions = complete(input, session);
-  const suggestion = suggestions[0];
+  const terminalColor = palettes.find((palette) => palette.id === session.palette)
+    ?.color;
+
   useEffect(() => {
     if (window.matchMedia("(pointer:fine)").matches) inputRef.current?.focus();
   }, []);
+
   useEffect(() => {
-    if (follow.current) endRef.current?.scrollIntoView({ block: "end" });
+    const screen = screenRef.current;
+    if (!screen || minimized) return;
+    if (follow.current) screen.scrollTop = screen.scrollHeight;
     else setNewOutput(true);
-  }, [entries]);
-  useEffect(() => {
-    const scroll = () => {
-      follow.current =
-        window.scrollY + window.innerHeight >=
-        document.documentElement.scrollHeight - 100;
-    };
-    window.addEventListener("scroll", scroll, { passive: true });
-    return () => window.removeEventListener("scroll", scroll);
-  }, []);
-  const setInput = (value) =>
+  }, [entries, minimized]);
+
+  const updateInput = (value) =>
     setTerminal((current) => ({ ...current, input: value }));
+
+  const appendEntry = (entry) =>
+    setTerminal((current) => ({
+      ...current,
+      entries: [...current.entries, entry].slice(-MAX_TRANSCRIPT),
+    }));
+
   function submit(value = input) {
     if (!value.trim()) return;
     const result = execute(value, session);
     if (result.appearance) saveAppearance(result.appearance);
-    follow.current =
-      window.scrollY + window.innerHeight >=
-      document.documentElement.scrollHeight - 150;
     setTerminal((current) => ({
       ...current,
       session: result.state,
@@ -81,17 +61,62 @@ export default function Terminal() {
                 output: result.output,
                 error: result.error,
               },
-            ],
+            ].slice(-MAX_TRANSCRIPT),
     }));
     setHistoryIndex(null);
     setAnnouncement(
       result.error
-        ? "Command not recognized. Read the output for help."
+        ? "Command failed. Read the terminal output for details."
         : `Command ${value.split(" ")[0]} completed.`,
     );
     if (result.action === "gui") switchMode("visual");
   }
+
+  function cancelInput() {
+    if (!input) return;
+    appendEntry({
+      command: input + "^C",
+      cwd: session.cwd,
+      output: [],
+      cancelled: true,
+    });
+    updateInput("");
+    setHistoryIndex(null);
+    setAnnouncement("Command cancelled.");
+  }
+
+  function showCompletions() {
+    appendEntry({
+      command: input,
+      cwd: session.cwd,
+      output: suggestions.map((value) => ({ kind: "text", text: value })),
+      completion: true,
+    });
+    setAnnouncement(`${suggestions.length} completion options available.`);
+  }
+
+  function recallHistory(direction) {
+    if (!session.history.length) return;
+    if (historyIndex === null) draft.current = input;
+    const next =
+      direction === "up"
+        ? Math.max(0, (historyIndex ?? session.history.length) - 1)
+        : Math.min(
+            session.history.length,
+            (historyIndex ?? session.history.length) + 1,
+          );
+    setHistoryIndex(next === session.history.length ? null : next);
+    updateInput(
+      next === session.history.length ? draft.current : session.history[next],
+    );
+  }
+
   function keyDown(event) {
+    if (event.ctrlKey && event.key.toLowerCase() === "c") {
+      event.preventDefault();
+      cancelInput();
+      return;
+    }
     if (event.ctrlKey && event.key.toLowerCase() === "l") {
       event.preventDefault();
       setTerminal((current) => ({ ...current, entries: [] }));
@@ -99,175 +124,123 @@ export default function Terminal() {
     }
     if (
       event.key === "Tab" &&
+      !event.shiftKey &&
       suggestions.length &&
-      suggestion !== input &&
-      !event.shiftKey
+      (suggestions.length > 1 || suggestions[0] !== input)
     ) {
       event.preventDefault();
-      setInput(suggestion);
+      if (suggestions.length === 1) updateInput(suggestions[0]);
+      else showCompletions();
       return;
     }
-    if (["ArrowUp", "ArrowDown"].includes(event.key)) {
+    if (event.key === "ArrowUp" || event.key === "ArrowDown") {
       event.preventDefault();
-      if (!session.history.length) return;
-      if (historyIndex === null) draft.current = input;
-      const next =
-        event.key === "ArrowUp"
-          ? Math.max(0, (historyIndex ?? session.history.length) - 1)
-          : Math.min(
-              session.history.length,
-              (historyIndex ?? session.history.length) + 1,
-            );
-      setHistoryIndex(next === session.history.length ? null : next);
-      setInput(
-        next === session.history.length ? draft.current : session.history[next],
-      );
+      recallHistory(event.key === "ArrowUp" ? "up" : "down");
     }
   }
+
+  const windowClass = [
+    "terminal-window",
+    minimized && "minimized",
+    maximized && "maximized",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <section
-      className={"terminal-page palette-" + session.palette}
-      style={{
-        "--terminal": palettes.find((p) => p.id === session.palette).color,
-      }}
+      className={`terminal-page palette-${session.palette}`}
+      style={{ "--terminal": terminalColor }}
     >
-      <header className="terminal-header">
-        <span>
-          <i className="status-dot" /> ASHIQE SYSTEMS / PERSONAL ARCHIVE
-        </span>
-        <div>
-          <button onClick={() => setPaletteOpen(true)}>⌘ K</button>
-          <button onClick={() => switchMode("visual")}>
-            Return to visual ↗
-          </button>
-        </div>
-      </header>
       <div
-        className="terminal-appearance"
-        role="group"
-        aria-label="Terminal appearance"
+        className={windowClass}
+        role="region"
+        aria-label="Portfolio terminal window"
       >
-        <span>Appearance</span>
-        {palettes.map((p) => (
-          <button
-            key={p.id}
-            aria-pressed={session.palette === p.id}
-            onClick={() => {
-              saveAppearance(p.id);
-              setTerminal((current) => ({
-                ...current,
-                session: { ...current.session, palette: p.id },
-              }));
-            }}
-          >
-            <i style={{ background: p.color }} aria-hidden="true" />
-            {p.label}
-          </button>
-        ))}
-      </div>
-      <div className="terminal-content">
-        <div className="terminal-welcome">
-          <span className="terminal-ascii" aria-hidden="true">
-            &gt;_
-          </span>
-          <div>
-            <h1>{profile.name}</h1>
-            <p>{profile.introduction}</p>
-            <p>
-              Type <button onClick={() => submit("help")}>help</button> to
-              explore. Tab completes. ↑ ↓ recall commands.
-            </p>
-          </div>
-        </div>
+        <TerminalTitlebar
+          minimized={minimized}
+          maximized={maximized}
+          onClose={() => switchMode("visual")}
+          onMinimize={() => setMinimized((current) => !current)}
+          onMaximize={() => {
+            setMinimized(false);
+            setMaximized((current) => !current);
+          }}
+        />
         <div
-          role="region"
-          aria-label="Command output"
-          className="terminal-transcript"
-        >
-          {entries.map((entry, i) => (
-            <section
-              className={
-                entry.error ? "terminal-entry terminal-error" : "terminal-entry"
-              }
-              key={i}
-            >
-              <p className="terminal-command">
-                <span>
-                  ashiqe@portfolio:{entry.cwd.replace("/home/ashiqe", "~")}$
-                </span>{" "}
-                {entry.command}
-              </p>
-              {entry.output.map((item, j) => (
-                <Output key={j} item={item} />
-              ))}
-            </section>
-          ))}
-        </div>
-        <div ref={endRef} />
-        <form
-          className="terminal-prompt"
-          onSubmit={(event) => {
-            event.preventDefault();
-            submit();
+          className="terminal-screen"
+          ref={screenRef}
+          hidden={minimized}
+          onScroll={(event) => {
+            const screen = event.currentTarget;
+            follow.current =
+              screen.scrollTop + screen.clientHeight >= screen.scrollHeight - 40;
+            if (follow.current) setNewOutput(false);
+          }}
+          onMouseDown={(event) => {
+            if (!event.target.closest("a, button, input"))
+              inputRef.current?.focus();
           }}
         >
-          <label htmlFor="command-input">
-            ashiqe@portfolio:{session.cwd.replace("/home/ashiqe", "~")}$
-          </label>
-          <input
-            ref={inputRef}
-            id="command-input"
-            aria-label="Terminal command"
-            autoCapitalize="off"
-            autoCorrect="off"
-            spellCheck={false}
-            autoComplete="off"
-            value={input}
-            onChange={(e) => {
-              setHistoryIndex(null);
-              setInput(e.target.value);
-            }}
-            onKeyDown={keyDown}
-          />
-          <button type="submit" aria-label="Run command">
-            ↵
-          </button>
-        </form>
-        {input && suggestion && suggestion !== input && (
-          <button
-            className="terminal-suggestion"
-            onClick={() => {
-              setInput(suggestion);
-              inputRef.current?.focus();
+          <div className="terminal-notice">
+            <p>Portfolio sandbox — read-only virtual filesystem.</p>
+            <p>Type &quot;help&quot; to list available commands.</p>
+          </div>
+          <div
+            role="log"
+            aria-label="Command output"
+            aria-live="off"
+            className="terminal-transcript"
+          >
+            {entries.map((entry, index) => (
+              <TerminalEntry entry={entry} key={index} />
+            ))}
+          </div>
+          <form
+            className="terminal-prompt"
+            onSubmit={(event) => {
+              event.preventDefault();
+              submit();
             }}
           >
-            Tab → {suggestion}
-          </button>
-        )}
-        <div className="command-chips">
-          {["help", "projects", "skills", "experience", "contact", "clear"].map(
-            (command) => (
-              <button key={command} onClick={() => submit(command)}>
-                {command}
-              </button>
-            ),
+            <label htmlFor="command-input">
+              ashiqe@portfolio {session.cwd.replace("/home/ashiqe", "~")} %
+            </label>
+            <input
+              ref={inputRef}
+              id="command-input"
+              aria-label="Terminal command"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              autoComplete="off"
+              value={input}
+              onChange={(event) => {
+                setHistoryIndex(null);
+                updateInput(event.target.value);
+              }}
+              onKeyDown={keyDown}
+            />
+          </form>
+          {newOutput && (
+            <button
+              className="new-output"
+              onClick={() => {
+                const screen = screenRef.current;
+                if (screen) screen.scrollTop = screen.scrollHeight;
+                follow.current = true;
+                setNewOutput(false);
+                inputRef.current?.focus();
+              }}
+            >
+              New output ↓
+            </button>
           )}
         </div>
-        {newOutput && (
-          <button
-            className="new-output"
-            onClick={() => {
-              endRef.current?.scrollIntoView();
-              setNewOutput(false);
-            }}
-          >
-            New output ↓
-          </button>
-        )}
-        <p role="status" className="sr-only">
-          {announcement}
-        </p>
       </div>
+      <p role="status" className="sr-only">
+        {announcement}
+      </p>
     </section>
   );
 }
